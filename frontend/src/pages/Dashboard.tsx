@@ -90,30 +90,40 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-950 text-white py-10 px-4">
+    <div className="max-w-4xl mx-auto">
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <button
-          onClick={handleLogout}
-          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
-        >
-          Logout
-        </button>
-      </div>
+      <div className="flex justify-between items-center mb-10">
+  <div>
+    <h1 className="text-4xl font-bold tracking-tight">
+      Secure Task Dashboard
+    </h1>
+    <p className="text-gray-400 mt-1">
+      Manage your tasks securely and efficiently
+    </p>
+  </div>
+
+  <button
+    onClick={handleLogout}
+    className="bg-gray-800 hover:bg-gray-700 transition px-4 py-2 rounded-lg border border-gray-700"
+  >
+    Logout
+  </button>
+</div>
 
       {/* Create Task */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-4 mb-10">
         <input
           type="text"
           placeholder="Enter task title..."
-          className="flex-1 p-2 rounded bg-gray-800 text-white"
+          className="flex-1 p-3 rounded-xl bg-gray-900 border border-gray-800 focus:outline-none focus:border-blue-500 transition"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <button
           onClick={handleCreate}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+          className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-medium"
         >
           Add
         </button>
@@ -129,13 +139,17 @@ function Dashboard() {
 
       {/* Task List */}
       {!isLoading && tasks.length === 0 ? (
-        <p>No tasks yet.</p>
+        <div className="text-center py-16 text-gray-500">
+  <p className="text-lg">No tasks yet</p>
+  <p className="text-sm mt-2">Create your first task above</p>
+</div>
+
       ) : (
         <div className="space-y-4">
           {tasks.map((task: Task) => (
             <div
               key={task._id}
-              className="bg-gray-800 p-4 rounded-lg flex justify-between items-center"
+              className="bg-gray-900 border border-gray-800 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 p-5 rounded-xl flex justify-between items-center"
             >
               <div>
                 <h2 className="text-xl font-semibold">{task.title}</h2>
@@ -152,13 +166,13 @@ function Dashboard() {
                         | "Completed"
                     )
                   }
-                  className={`mt-2 p-1 rounded text-white ${
-                    task.status === "Todo"
-                      ? "bg-yellow-600"
-                      : task.status === "In Progress"
-                      ? "bg-blue-600"
-                      : "bg-green-600"
-                  }`}
+                  className={`mt-3 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+  task.status === "Todo"
+    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+    : task.status === "In Progress"
+    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+    : "bg-green-500/20 text-green-400 border border-green-500/30"
+}`}
                 >
                   <option value="Todo">Todo</option>
                   <option value="In Progress">In Progress</option>
@@ -176,6 +190,7 @@ function Dashboard() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
