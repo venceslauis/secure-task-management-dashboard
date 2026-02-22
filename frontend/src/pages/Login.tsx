@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import api from "../api/axios";
 
 function Login() {
@@ -10,7 +11,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
@@ -23,8 +24,16 @@ function Login() {
 
       localStorage.setItem("token", res.data.token);
       navigate("/dashboard");
-    } catch (err: any) {
-      setError("Invalid credentials or user already exists");
+    } catch (error: unknown) {
+      // Safely narrow Axios error
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.message ||
+          "Invalid credentials or user already exists";
+        setError(message);
+      } else {
+        setError("Something went wrong");
+      }
     }
   };
 
