@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import api from "../api/axios";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 interface Task {
   _id: string;
@@ -9,71 +14,80 @@ interface Task {
 }
 
 function Dashboard() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [error, setError] = useState("");
   const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   // 🔹 Fetch Tasks
-  const fetchTasks = async () => {
-    setLoading(true); // ✅ START LOADING
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
-    try {
-    const res = await api.get("/tasks");
-    setTasks(res.data);
-  } catch (err) {
-    setError("Failed to fetch tasks");
-  } finally {
-    setLoading(false); // ✅ STOP LOADING
-  }
-};
-
+  const {
+    data: tasks = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: async () => {
+      const res = await api.get("/tasks");
+      return res.data;
+    },
+  });
 
   // 🔹 Create Task
-  const handleCreate = async () => {
-    if (!title.trim()) return;
-
-    try {
+  const createMutation = useMutation({
+    mutationFn: async (title: string) => {
       await api.post("/tasks", { title });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setTitle("");
-      fetchTasks();
-    } catch {
-      setError("Failed to create task");
-    }
-  };
+    },
+  });
 
   // 🔹 Delete Task
-  const handleDelete = async (id: string) => {
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       await api.delete(`/tasks/${id}`);
-      fetchTasks();
-    } catch {
-      setError("Failed to delete task");
-    }
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
 
   // 🔹 Update Status
-  const handleStatusChange = async (
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "Todo" | "In Progress" | "Completed";
+    }) => {
+      await api.put(`/tasks/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  // 🔹 Handlers
+  const handleCreate = () => {
+    if (!title.trim()) return;
+    createMutation.mutate(title);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  const handleStatusChange = (
     id: string,
     status: "Todo" | "In Progress" | "Completed"
   ) => {
-    try {
-      await api.put(`/tasks/${id}`, { status });
-      fetchTasks();
-    } catch {
-      setError("Failed to update status");
-    }
+    updateMutation.mutate({ id, status });
   };
 
-  // 🔹 Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/";
   };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -105,16 +119,20 @@ function Dashboard() {
         </button>
       </div>
 
+      {/* Loading */}
+      {isLoading && <p className="mb-4">Loading tasks...</p>}
+
       {/* Error */}
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {isError && (
+        <p className="text-red-500 mb-4">Failed to fetch tasks</p>
+      )}
 
       {/* Task List */}
-      {loading && <p className="mb-4">Loading tasks...</p>}
-      {tasks.length === 0 ? (
+      {!isLoading && tasks.length === 0 ? (
         <p>No tasks yet.</p>
       ) : (
         <div className="space-y-4">
-          {tasks.map((task) => (
+          {tasks.map((task: Task) => (
             <div
               key={task._id}
               className="bg-gray-800 p-4 rounded-lg flex justify-between items-center"
@@ -124,22 +142,24 @@ function Dashboard() {
                 <p className="text-gray-400">{task.description}</p>
 
                 <select
-                    value={task.status}
-                    onChange={(e) =>
+                  value={task.status}
+                  onChange={(e) =>
                     handleStatusChange(
-                        task._id,
-                        e.target.value as "Todo" | "In Progress" | "Completed"
-                        )
-                    }
-                    className={`mt-2 p-1 rounded text-white ${
+                      task._id,
+                      e.target.value as
+                        | "Todo"
+                        | "In Progress"
+                        | "Completed"
+                    )
+                  }
+                  className={`mt-2 p-1 rounded text-white ${
                     task.status === "Todo"
-                    ? "bg-yellow-600"
-                    : task.status === "In Progress"
-                    ? "bg-blue-600"
-                    : "bg-green-600"
-                    }`}
-                    >
-
+                      ? "bg-yellow-600"
+                      : task.status === "In Progress"
+                      ? "bg-blue-600"
+                      : "bg-green-600"
+                  }`}
+                >
                   <option value="Todo">Todo</option>
                   <option value="In Progress">In Progress</option>
                   <option value="Completed">Completed</option>
